@@ -1,4 +1,4 @@
-### [FullCalendar](http://fullcalendar.io/) v3.1.0 with Scheduler v1.5, packaged for Meteor v1.4 ###
+### [FullCalendar](http://fullcalendar.io/) v3.3.1 with Scheduler v1.6.1, packaged for Meteor v1.4 ###
 
 Based on [drblue/meteor-fullcalendar-scheduler](https://github.com/drblue/meteor-fullcalendar-scheduler) fork, which is based on [rzymek/meteor-fullcalendar/](https://github.com/rzymek/meteor-fullcalendar/), which is a Meteor implementation of [FullCalendar](https://github.com/fullcalendar/fullcalendar). Whew.
 

@@ -1,7 +1,7 @@
 Package.describe({
     name: 'davesierra:fullcalendar',
-    summary: "FullCalendar v3.1 with Scheduler",
-    version: "3.1.2",
+    summary: "FullCalendar v3.3.1 with Scheduler 1.6.1",
+    version: "3.3.1",
     git: "https://github.com/davesierra/meteor-fullcalendar-scheduler.git"
 });
 
