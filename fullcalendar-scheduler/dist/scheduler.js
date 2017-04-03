@@ -1,8 +1,8 @@
 
 /*!
-FullCalendar Scheduler v1.5.0
-Docs & License: http://fullcalendar.io/scheduler/
-(c) 2016 Adam Shaw
+FullCalendar Scheduler v1.6.1
+Docs & License: https://fullcalendar.io/scheduler/
+(c) 2017 Adam Shaw
  */
 (function(factory) {
 	if (typeof define === 'function' && define.amd) {
@@ -19,7 +19,7 @@ Docs & License: http://fullcalendar.io/scheduler/
 		factory(jQuery, moment);
 	}
 })(function($, moment) {;
-var COL_MIN_WIDTH, Calendar, CalendarExtension, Class, ClippedScroller, CoordCache, DEFAULT_GRID_DURATION, DragListener, EmitterMixin, EnhancedScroller, EventRow, FC, Grid, HRowGroup, LICENSE_INFO_URL, ListenerMixin, MAX_AUTO_CELLS, MAX_AUTO_SLOTS_PER_LABEL, MAX_CELLS, MIN_AUTO_LABELS, PRESET_LICENSE_KEYS, Promise, RELEASE_DATE, ResourceAgendaView, ResourceBasicView, ResourceDayGrid, ResourceDayTableMixin, ResourceGridMixin, ResourceManager, ResourceMonthView, ResourceRow, ResourceTimeGrid, ResourceTimelineGrid, ResourceTimelineView, ResourceViewMixin, RowGroup, RowParent, STOCK_SUB_DURATIONS, ScrollFollower, ScrollFollowerSprite, ScrollJoiner, ScrollerCanvas, Spreadsheet, TaskQueue, TimelineGrid, TimelineView, UPGRADE_WINDOW, VRowGroup, VertResourceViewMixin, View, _filterResourcesWithEvents, applyAll, capitaliseFirstLetter, compareByFieldSpecs, computeIntervalUnit, computeOffsetForSeg, computeOffsetForSegs, copyRect, createObject, cssToStr, debounce, detectWarningInContainer, divideDurationByDuration, divideRangeByDuration, durationHasTime, flexibleCompare, getContentRect, getOuterRect, getOwnCells, getRectHeight, getRectWidth, getScrollbarWidths, hContainRect, htmlEscape, intersectRanges, intersectRects, isImmuneUrl, isInt, isValidKey, joinRects, multiplyDuration, origExecuteEventsRender, origGetSegCustomClasses, origGetSegDefaultBackgroundColor, origGetSegDefaultBorderColor, origGetSegDefaultTextColor, origHandleDate, origOnDateRender, origRemoveElement, origSetElement, parseFieldSpecs, processLicenseKey, proxy, renderingWarningInContainer, testRectContains, testRectHContains, testRectVContains, timeRowSegsCollide, vContainRect,
+var COL_MIN_WIDTH, Calendar, CalendarExtension, Class, ClippedScroller, CoordCache, DEFAULT_GRID_DURATION, DragListener, EmitterMixin, EnhancedScroller, EventRow, FC, Grid, HRowGroup, LICENSE_INFO_URL, ListenerMixin, MAX_AUTO_CELLS, MAX_AUTO_SLOTS_PER_LABEL, MAX_CELLS, MIN_AUTO_LABELS, PRESET_LICENSE_KEYS, Promise, RELEASE_DATE, ResourceAgendaView, ResourceBasicView, ResourceDayGrid, ResourceDayTableMixin, ResourceGridMixin, ResourceManager, ResourceMonthView, ResourceRow, ResourceTimeGrid, ResourceTimelineGrid, ResourceTimelineView, ResourceViewMixin, RowGroup, RowParent, STOCK_SUB_DURATIONS, ScrollFollower, ScrollFollowerSprite, ScrollJoiner, ScrollerCanvas, Spreadsheet, TaskQueue, TimelineGrid, TimelineView, UPGRADE_WINDOW, VRowGroup, VertResourceViewMixin, View, _filterResourcesWithEvents, applyAll, capitaliseFirstLetter, compareByFieldSpecs, computeGreatestUnit, computeOffsetForSeg, computeOffsetForSegs, copyRect, createObject, cssToStr, debounce, detectWarningInContainer, divideDurationByDuration, divideRangeByDuration, durationHasTime, flexibleCompare, getContentRect, getOuterRect, getOwnCells, getRectHeight, getRectWidth, getScrollbarWidths, hContainRect, htmlEscape, intersectRanges, intersectRects, isImmuneUrl, isInt, isValidKey, joinRects, multiplyDuration, origExecuteEventsRender, origGetSegCustomClasses, origGetSegDefaultBackgroundColor, origGetSegDefaultBorderColor, origGetSegDefaultTextColor, origOnDateRender, origRemoveElement, origSetElement, parseFieldSpecs, processLicenseKey, proxy, renderingWarningInContainer, testRectContains, testRectHContains, testRectVContains, timeRowSegsCollide, vContainRect,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty,
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
@@ -27,9 +27,9 @@ var COL_MIN_WIDTH, Calendar, CalendarExtension, Class, ClippedScroller, CoordCac
 
 FC = $.fullCalendar;
 
-FC.schedulerVersion = "1.5.0";
+FC.schedulerVersion = "1.6.1";
 
-if (FC.internalApiVersion !== 7) {
+if (FC.internalApiVersion !== 9) {
   FC.warn('v' + FC.schedulerVersion + ' of FullCalendar Scheduler ' + 'is incompatible with v' + FC.version + ' of the core.\n' + 'Please see http://fullcalendar.io/support/ for more information.');
   return;
 }
@@ -54,7 +54,7 @@ DragListener = FC.DragListener;
 
 htmlEscape = FC.htmlEscape;
 
-computeIntervalUnit = FC.computeIntervalUnit;
+computeGreatestUnit = FC.computeGreatestUnit;
 
 proxy = FC.proxy;
 
@@ -128,6 +128,8 @@ EnhancedScroller = (function(superClass) {
   EnhancedScroller.prototype.isScrolling = false;
 
   EnhancedScroller.prototype.isTouching = false;
+
+  EnhancedScroller.prototype.isTouchedEver = false;
 
   EnhancedScroller.prototype.isMoving = false;
 
@@ -224,7 +226,8 @@ EnhancedScroller = (function(superClass) {
   };
 
   EnhancedScroller.prototype.reportTouchStart = function() {
-    return this.isTouching = true;
+    this.isTouching = true;
+    return this.isTouchedEver = true;
   };
 
   EnhancedScroller.prototype.reportTouchEnd = function() {
@@ -660,7 +663,7 @@ ScrollFollower = (function() {
     this.sprites = [];
     scroller.on('scroll', (function(_this) {
       return function() {
-        if (scroller.isTouching) {
+        if (scroller.isTouchedEver) {
           _this.isTouch = true;
           return _this.isForcedRelative = true;
         } else {
@@ -1106,7 +1109,7 @@ CalendarExtension = (function(superClass) {
         viewClass = spec.resourceClass;
       }
     }
-    return new viewClass(this, viewType, spec.options, spec.duration);
+    return new viewClass(this, spec);
   };
 
   CalendarExtension.prototype.getResources = function() {
@@ -1149,6 +1152,24 @@ CalendarExtension = (function(superClass) {
       }
     }
     return CalendarExtension.__super__.isSpanAllowed.apply(this, arguments);
+  };
+
+  CalendarExtension.prototype.mutateSeg = function(span, newProps, largeUnit) {
+    var mutatedResourceIds, newResourceId, oldResourceId, ref;
+    if (newProps.resourceId) {
+      oldResourceId = ((ref = span.resource) != null ? ref.id : void 0) || span.resourceId;
+      newResourceId = newProps.resourceId;
+      mutatedResourceIds = this.getEventResourceIds(span.event);
+      if (oldResourceId !== newResourceId) {
+        mutatedResourceIds = mutatedResourceIds.filter(function(resourceId) {
+          return resourceId !== oldResourceId && resourceId !== newResourceId;
+        });
+        mutatedResourceIds.push(newResourceId);
+      }
+      newProps = $.extend({}, newProps);
+      this.setEventResourceIds(newProps, mutatedResourceIds);
+    }
+    return this.mutateEvent(span.event, newProps, largeUnit);
   };
 
   CalendarExtension.prototype.getPeerEvents = function(span, event) {
@@ -1263,7 +1284,12 @@ CalendarExtension = (function(superClass) {
   };
 
   CalendarExtension.prototype.setEventResourceId = function(event, resourceId) {
-    return event[this.getEventResourceField()] = String(resourceId != null ? resourceId : '');
+    return this.setEventResourceIds(event, resourceId ? [resourceId] : []);
+  };
+
+  CalendarExtension.prototype.setEventResourceIds = function(event, resourceIds) {
+    event[this.getEventResourceField()] = resourceIds.length === 1 ? resourceIds[0] : null;
+    return event.resourceIds = resourceIds.length > 1 ? resourceIds : null;
   };
 
   CalendarExtension.prototype.getEventResourceField = function() {
@@ -1315,8 +1341,6 @@ origSetElement = View.prototype.setElement;
 
 origRemoveElement = View.prototype.removeElement;
 
-origHandleDate = View.prototype.handleDate;
-
 origOnDateRender = View.prototype.onDateRender;
 
 origExecuteEventsRender = View.prototype.executeEventsRender;
@@ -1330,7 +1354,9 @@ Calendar.defaults.refetchResourcesOnNavigate = false;
 View.prototype.setElement = function() {
   var promise;
   promise = origSetElement.apply(this, arguments);
-  this.bindResources();
+  if (!this.opt('refetchResourcesOnNavigate')) {
+    this.bindResources();
+  }
   return promise;
 };
 
@@ -1341,14 +1367,28 @@ View.prototype.removeElement = function() {
   return origRemoveElement.apply(this, arguments);
 };
 
-View.prototype.handleDate = function(date, isReset) {
-  if (isReset && this.opt('refetchResourcesOnNavigate')) {
-    this.unsetResources({
+
+/*
+Replace the supermethod's logic. Important to unbind/bind *events* (TODO: make more DRY)
+ */
+
+View.prototype.handleDate = function(dateProfile) {
+  var resourcesNeedDate;
+  resourcesNeedDate = this.opt('refetchResourcesOnNavigate');
+  this.unbindEvents();
+  if (resourcesNeedDate) {
+    this.unbindResources({
       skipUnrender: true
     });
-    this.fetchResources();
   }
-  return origHandleDate.apply(this, arguments);
+  return this.requestDateRender(dateProfile).then((function(_this) {
+    return function() {
+      _this.bindEvents();
+      if (resourcesNeedDate) {
+        return _this.bindResources(true);
+      }
+    };
+  })(this));
 };
 
 View.prototype.onDateRender = function() {
@@ -1364,12 +1404,12 @@ View.prototype.executeEventsRender = function(events) {
   })(this));
 };
 
-View.prototype.bindResources = function() {
+View.prototype.bindResources = function(forceInitialFetch) {
   var promise;
   if (!this.isResourcesBound) {
     this.isResourcesBound = true;
     this.trigger('resourcesBind');
-    promise = this.opt('refetchResourcesOnNavigate') ? this.fetchResources() : this.requestResources();
+    promise = forceInitialFetch ? this.fetchResources() : this.requestResources();
     return this.rejectOn('resourcesUnbind', promise).then((function(_this) {
       return function(resources) {
         _this.listenTo(_this.calendar.resourceManager, {
@@ -1461,12 +1501,33 @@ View.prototype.handleResourceRemove = function(resource) {
   }
 };
 
+
+/*
+Like fetchResources, but won't refetch if already fetched (regardless of start/end).
+If refetchResourcesOnNavigate is enabled,
+this function expects the view's start/end to be already populated.
+ */
+
 View.prototype.requestResources = function() {
-  return this.calendar.resourceManager.getResources();
+  if (this.opt('refetchResourcesOnNavigate')) {
+    return this.calendar.resourceManager.getResources(this.activeRange.start, this.activeRange.end);
+  } else {
+    return this.calendar.resourceManager.getResources();
+  }
 };
 
+
+/*
+If refetchResourcesOnNavigate is enabled,
+this function expects the view's start/end to be already populated.
+ */
+
 View.prototype.fetchResources = function() {
-  return this.calendar.resourceManager.fetchResources();
+  if (this.opt('refetchResourcesOnNavigate')) {
+    return this.calendar.resourceManager.fetchResources(this.activeRange.start, this.activeRange.end);
+  } else {
+    return this.calendar.resourceManager.fetchResources();
+  }
 };
 
 View.prototype.getCurrentResources = function() {
@@ -1575,11 +1636,23 @@ ResourceManager = (function(superClass) {
     this.initializeCache();
   }
 
-  ResourceManager.prototype.getResources = function() {
-    return this.fetching || this.fetchResources();
+
+  /*
+  	Like fetchResources, but won't refetch if already fetched (regardless of start/end).
+   */
+
+  ResourceManager.prototype.getResources = function(start, end) {
+    return this.fetching || this.fetchResources(start, end);
   };
 
-  ResourceManager.prototype.fetchResources = function() {
+
+  /*
+  	Will always fetch, even if done previously.
+  	Accepts optional chrono-related params to pass on to the raw resource sources.
+  	Returns a promise.
+   */
+
+  ResourceManager.prototype.fetchResources = function(start, end) {
     var currentFetchId;
     currentFetchId = (this.fetchId += 1);
     return this.fetching = new Promise((function(_this) {
@@ -1591,14 +1664,22 @@ ResourceManager = (function(superClass) {
           } else {
             return reject();
           }
-        });
+        }, start, end);
       };
     })(this));
   };
 
-  ResourceManager.prototype.fetchResourceInputs = function(callback) {
-    var source;
-    source = this.calendar.options['resources'];
+
+  /*
+  	Accepts optional chrono-related params to pass on to the raw resource sources.
+  	Calls callback when done.
+   */
+
+  ResourceManager.prototype.fetchResourceInputs = function(callback, start, end) {
+    var calendar, options, requestParams, source;
+    calendar = this.calendar;
+    options = calendar.options;
+    source = options.resources;
     if ($.type(source) === 'string') {
       source = {
         url: source
@@ -1612,12 +1693,22 @@ ResourceManager = (function(superClass) {
             _this.calendar.popLoading();
             return callback(resourceInputs);
           };
-        })(this));
+        })(this), start, end, options.timezone);
       case 'object':
-        this.calendar.pushLoading();
-        return $.ajax($.extend({}, ResourceManager.ajaxDefaults, source)).then((function(_this) {
+        calendar.pushLoading();
+        requestParams = {};
+        if (start && end) {
+          requestParams[options.startParam] = start.format();
+          requestParams[options.endParam] = end.format();
+          if (options.timezone && options.timezone !== 'local') {
+            requestParams[options.timezoneParam] = options.timezone;
+          }
+        }
+        return $.ajax($.extend({
+          data: requestParams
+        }, ResourceManager.ajaxDefaults, source)).then((function(_this) {
           return function(resourceInputs) {
-            _this.calendar.popLoading();
+            calendar.popLoading();
             return callback(resourceInputs);
           };
         })(this));
@@ -2064,15 +2155,6 @@ ResourceViewMixin = {
   	But mutateEvent isn't aware of eventResourceField, so it might be setting the wrong property. Workaround.
   	TODO: normalize somewhere else. maybe make a hook in core.
    */
-  reportEventDrop: function() {
-    var dropLocation, event, otherArgs, ref;
-    event = arguments[0], dropLocation = arguments[1], otherArgs = 3 <= arguments.length ? slice.call(arguments, 2) : [];
-    dropLocation = this.normalizeDropLocation(dropLocation);
-    if (dropLocation.resourceId && event.resourceIds) {
-      dropLocation.resourceIds = null;
-    }
-    return (ref = View.prototype.reportEventDrop).call.apply(ref, [this, event, dropLocation].concat(slice.call(otherArgs)));
-  },
   reportExternalDrop: function() {
     var dropLocation, meta, otherArgs, ref;
     meta = arguments[0], dropLocation = arguments[1], otherArgs = 3 <= arguments.length ? slice.call(arguments, 2) : [];
@@ -2157,7 +2239,7 @@ VertResourceViewMixin = $.extend({}, ResourceViewMixin, {
       return Promise.resolve();
     }
   },
-  executeDateRender: function(date) {
+  executeDateRender: function(dateProfile) {
     return View.prototype.executeDateRender.apply(this, arguments).then((function(_this) {
       return function() {
         if (_this.isResourcesSet) {
@@ -2166,7 +2248,7 @@ VertResourceViewMixin = $.extend({}, ResourceViewMixin, {
       };
     })(this));
   },
-  executeDateUnrender: function(date) {
+  executeDateUnrender: function() {
     return View.prototype.executeDateUnrender.apply(this, arguments).then((function(_this) {
       return function() {
         if (_this.isResourcesSet) {
@@ -2181,14 +2263,14 @@ VertResourceViewMixin = $.extend({}, ResourceViewMixin, {
 
 ResourceGridMixin = {
   allowCrossResource: true,
-  eventRangeToSpans: function(range, event) {
+  eventRangeToSpans: function(eventRange, event) {
     var j, len, resourceId, resourceIds, results;
     resourceIds = this.view.calendar.getEventResourceIds(event);
     if (resourceIds.length) {
       results = [];
       for (j = 0, len = resourceIds.length; j < len; j++) {
         resourceId = resourceIds[j];
-        results.push($.extend({}, range, {
+        results.push($.extend({}, eventRange, {
           resourceId: resourceId
         }));
       }
@@ -2628,18 +2710,24 @@ TimelineView = (function(superClass) {
 
   TimelineView.prototype.isScrolled = false;
 
+  TimelineView.prototype.usesMinMaxTime = true;
+
   TimelineView.prototype.initialize = function() {
-    this.timeGrid = this.instantiateGrid();
-    return this.intervalDuration = this.timeGrid.duration;
+    return this.timeGrid = this.instantiateGrid();
   };
 
   TimelineView.prototype.instantiateGrid = function() {
     return new TimelineGrid(this);
   };
 
-  TimelineView.prototype.setRange = function(range) {
-    TimelineView.__super__.setRange.apply(this, arguments);
-    return this.timeGrid.setRange(range);
+  TimelineView.prototype.setDateProfile = function(dateProfile) {
+    TimelineView.__super__.setDateProfile.apply(this, arguments);
+    this.timeGrid.initScaleProps();
+    return this.timeGrid.setRange(this.renderRange);
+  };
+
+  TimelineView.prototype.getFallbackDuration = function() {
+    return this.timeGrid.computeFallbackDuration();
   };
 
   TimelineView.prototype.renderSkeleton = function() {
@@ -2711,6 +2799,14 @@ TimelineView = (function(superClass) {
     return this.timeGrid.unrenderNowIndicator();
   };
 
+  TimelineView.prototype.hitsNeeded = function() {
+    return this.timeGrid.hitsNeeded();
+  };
+
+  TimelineView.prototype.hitsNotNeeded = function() {
+    return this.timeGrid.hitsNotNeeded();
+  };
+
   TimelineView.prototype.prepareHits = function() {
     return this.timeGrid.prepareHits();
   };
@@ -2756,7 +2852,7 @@ TimelineView = (function(superClass) {
       scrollTime = this.opt('scrollTime');
       if (scrollTime) {
         scrollTime = moment.duration(scrollTime);
-        left = this.timeGrid.dateToCoord(this.start.clone().time(scrollTime));
+        left = this.timeGrid.dateToCoord(this.activeRange.start.clone().time(scrollTime));
       }
     }
     return {
@@ -2851,10 +2947,6 @@ TimelineGrid = (function(superClass) {
 
   TimelineGrid.prototype.eventTitleFollower = null;
 
-  TimelineGrid.prototype.minTime = null;
-
-  TimelineGrid.prototype.maxTime = null;
-
   TimelineGrid.prototype.timeWindowMs = null;
 
   TimelineGrid.prototype.slotDuration = null;
@@ -2886,15 +2978,7 @@ TimelineGrid = (function(superClass) {
   TimelineGrid.prototype.innerEl = null;
 
   function TimelineGrid() {
-    var input;
     TimelineGrid.__super__.constructor.apply(this, arguments);
-    this.initScaleProps();
-    this.minTime = moment.duration(this.opt('minTime') || '00:00');
-    this.maxTime = moment.duration(this.opt('maxTime') || '24:00');
-    this.timeWindowMs = this.maxTime - this.minTime;
-    this.snapDuration = (input = this.opt('snapDuration')) ? moment.duration(input) : this.slotDuration;
-    this.minResizeDuration = this.snapDuration;
-    this.snapsPerSlot = divideDurationByDuration(this.slotDuration, this.snapDuration);
     this.slotWidth = this.opt('slotWidth');
   }
 
@@ -2907,7 +2991,7 @@ TimelineGrid = (function(superClass) {
     if (this.view.isHiddenDay(date)) {
       return false;
     } else if (this.isTimeScale) {
-      ms = date.time() - this.minTime;
+      ms = date.time() - this.view.minTime;
       ms = ((ms % 86400000) + 86400000) % 86400000;
       return ms < this.timeWindowMs;
     } else {
@@ -2976,9 +3060,10 @@ TimelineGrid = (function(superClass) {
     var date, slotDates;
     this.start = this.normalizeGridDate(this.start);
     this.end = this.normalizeGridDate(this.end);
+    this.timeWindowMs = this.view.maxTime - this.view.minTime;
     if (this.isTimeScale) {
-      this.start.add(this.minTime);
-      this.end.subtract(1, 'day').add(this.maxTime);
+      this.start.add(this.view.minTime);
+      this.end.subtract(1, 'day').add(this.view.maxTime);
     }
     slotDates = [];
     date = this.start.clone();
@@ -3043,7 +3128,7 @@ TimelineGrid = (function(superClass) {
     snapsPerSlot = this.snapsPerSlot;
     slatCoordCache = this.slatCoordCache;
     containerCoordCache = this.containerCoordCache;
-    if (containerCoordCache.isTopInBounds(topOffset)) {
+    if (containerCoordCache.isPointInBounds(leftOffset, topOffset)) {
       slatIndex = slatCoordCache.getHorizontalIndex(leftOffset);
       if (slatIndex != null) {
         slatWidth = slatCoordCache.getWidth(slatIndex);
@@ -3337,7 +3422,7 @@ TimelineGrid = (function(superClass) {
 
   TimelineGrid.prototype.getNowIndicatorUnit = function() {
     if (this.isTimeScale) {
-      return computeIntervalUnit(this.slotDuration);
+      return computeGreatestUnit(this.slotDuration);
     }
   };
 
@@ -3724,7 +3809,12 @@ TimelineGrid = (function(superClass) {
   };
 
   TimelineGrid.prototype.renderEventResize = function(resizeLocation, seg) {
-    this.renderHighlight(this.eventToSpan(resizeLocation));
+    var eventSpan, eventSpans, j, len;
+    eventSpans = this.eventToSpans(resizeLocation);
+    for (j = 0, len = eventSpans.length; j < len; j++) {
+      eventSpan = eventSpans[j];
+      this.renderHighlight(eventSpan);
+    }
     return this.renderEventLocationHelper(resizeLocation, seg);
   };
 
@@ -3772,10 +3862,15 @@ TimelineGrid = (function(superClass) {
   };
 
   TimelineGrid.prototype.renderDrag = function(dropLocation, seg) {
+    var eventSpan, eventSpans, j, len;
     if (seg) {
       return this.renderEventLocationHelper(dropLocation, seg);
     } else {
-      this.renderHighlight(this.eventToSpan(dropLocation));
+      eventSpans = this.eventToSpans(dropLocation);
+      for (j = 0, len = eventSpans.length; j < len; j++) {
+        eventSpan = eventSpans[j];
+        this.renderHighlight(eventSpan);
+      }
       return null;
     }
   };
@@ -3866,7 +3961,6 @@ TimelineGrid.prototype.initScaleProps = function() {
   var input, slotUnit, type;
   this.labelInterval = this.queryDurationOption('slotLabelInterval');
   this.slotDuration = this.queryDurationOption('slotDuration');
-  this.ensureGridDuration();
   this.validateLabelAndSlot();
   this.ensureLabelInterval();
   this.ensureSlotDuration();
@@ -3874,17 +3968,19 @@ TimelineGrid.prototype.initScaleProps = function() {
   type = $.type(input);
   this.headerFormats = type === 'array' ? input : type === 'string' ? [input] : this.computeHeaderFormats();
   this.isTimeScale = durationHasTime(this.slotDuration);
-  this.largeUnit = !this.isTimeScale ? (slotUnit = computeIntervalUnit(this.slotDuration), /year|month|week/.test(slotUnit) ? slotUnit : void 0) : void 0;
-  return this.emphasizeWeeks = this.slotDuration.as('days') === 1 && this.duration.as('weeks') >= 2 && !this.opt('businessHours');
+  this.largeUnit = !this.isTimeScale ? (slotUnit = computeGreatestUnit(this.slotDuration), /year|month|week/.test(slotUnit) ? slotUnit : void 0) : void 0;
+  this.emphasizeWeeks = this.slotDuration.as('days') === 1 && this.view.currentRangeAs('weeks') >= 2 && !this.opt('businessHours');
 
   /*
-  	console.log('view duration =', @duration.humanize())
   	console.log('label interval =', @labelInterval.humanize())
   	console.log('slot duration =', @slotDuration.humanize())
   	console.log('header formats =', @headerFormats)
   	console.log('isTimeScale', @isTimeScale)
   	console.log('largeUnit', @largeUnit)
    */
+  this.snapDuration = (input = this.opt('snapDuration')) ? moment.duration(input) : this.slotDuration;
+  this.minResizeDuration = this.snapDuration;
+  return this.snapsPerSlot = divideDurationByDuration(this.slotDuration, this.snapDuration);
 };
 
 TimelineGrid.prototype.queryDurationOption = function(name) {
@@ -3899,16 +3995,17 @@ TimelineGrid.prototype.queryDurationOption = function(name) {
 };
 
 TimelineGrid.prototype.validateLabelAndSlot = function() {
-  var labelCnt, slotCnt, slotsPerLabel;
+  var currentRange, labelCnt, slotCnt, slotsPerLabel;
+  currentRange = this.view.currentRange;
   if (this.labelInterval) {
-    labelCnt = divideDurationByDuration(this.duration, this.labelInterval);
+    labelCnt = divideRangeByDuration(currentRange.start, currentRange.end, this.labelInterval);
     if (labelCnt > MAX_CELLS) {
       FC.warn('slotLabelInterval results in too many cells');
       this.labelInterval = null;
     }
   }
   if (this.slotDuration) {
-    slotCnt = divideDurationByDuration(this.duration, this.slotDuration);
+    slotCnt = divideRangeByDuration(currentRange.start, currentRange.end, this.slotDuration);
     if (slotCnt > MAX_CELLS) {
       FC.warn('slotDuration results in too many cells');
       this.slotDuration = null;
@@ -3923,38 +4020,30 @@ TimelineGrid.prototype.validateLabelAndSlot = function() {
   }
 };
 
-TimelineGrid.prototype.ensureGridDuration = function() {
-  var gridDuration, input, j, labelCnt, labelInterval;
-  gridDuration = this.duration;
-  if (!gridDuration) {
-    gridDuration = this.view.intervalDuration;
-    if (!gridDuration) {
-      if (!this.labelInterval && !this.slotDuration) {
-        gridDuration = moment.duration(DEFAULT_GRID_DURATION);
-      } else {
-        labelInterval = this.ensureLabelInterval();
-        for (j = STOCK_SUB_DURATIONS.length - 1; j >= 0; j += -1) {
-          input = STOCK_SUB_DURATIONS[j];
-          gridDuration = moment.duration(input);
-          labelCnt = divideDurationByDuration(gridDuration, labelInterval);
-          if (labelCnt >= MIN_AUTO_LABELS) {
-            break;
-          }
-        }
+TimelineGrid.prototype.computeFallbackDuration = function() {
+  var duration, input, j, labelCnt, labelInterval;
+  duration = null;
+  if (!this.labelInterval && !this.slotDuration) {
+    duration = moment.duration(DEFAULT_GRID_DURATION);
+  } else {
+    labelInterval = this.ensureLabelInterval();
+    for (j = STOCK_SUB_DURATIONS.length - 1; j >= 0; j += -1) {
+      input = STOCK_SUB_DURATIONS[j];
+      duration = moment.duration(input);
+      labelCnt = divideDurationByDuration(duration, labelInterval);
+      if (labelCnt >= MIN_AUTO_LABELS) {
+        break;
       }
     }
-    this.duration = gridDuration;
   }
-  return gridDuration;
+  return duration;
 };
 
 TimelineGrid.prototype.ensureLabelInterval = function() {
-  var input, j, k, labelCnt, labelInterval, len, len1, slotsPerLabel, tryLabelInterval;
+  var currentRange, input, j, k, labelCnt, labelInterval, len, len1, slotsPerLabel, tryLabelInterval;
+  currentRange = this.view.currentRange;
   labelInterval = this.labelInterval;
   if (!labelInterval) {
-    if (!this.duration && !this.slotDuration) {
-      this.ensureGridDuration();
-    }
     if (this.slotDuration) {
       for (j = 0, len = STOCK_SUB_DURATIONS.length; j < len; j++) {
         input = STOCK_SUB_DURATIONS[j];
@@ -3972,7 +4061,7 @@ TimelineGrid.prototype.ensureLabelInterval = function() {
       for (k = 0, len1 = STOCK_SUB_DURATIONS.length; k < len1; k++) {
         input = STOCK_SUB_DURATIONS[k];
         labelInterval = moment.duration(input);
-        labelCnt = divideDurationByDuration(this.duration, labelInterval);
+        labelCnt = divideRangeByDuration(currentRange.start, currentRange.end, labelInterval);
         if (labelCnt >= MIN_AUTO_LABELS) {
           break;
         }
@@ -3984,7 +4073,8 @@ TimelineGrid.prototype.ensureLabelInterval = function() {
 };
 
 TimelineGrid.prototype.ensureSlotDuration = function() {
-  var input, j, labelInterval, len, slotCnt, slotDuration, slotsPerLabel, trySlotDuration;
+  var currentRange, input, j, labelInterval, len, slotCnt, slotDuration, slotsPerLabel, trySlotDuration;
+  currentRange = this.view.currentRange;
   slotDuration = this.slotDuration;
   if (!slotDuration) {
     labelInterval = this.ensureLabelInterval();
@@ -3997,8 +4087,8 @@ TimelineGrid.prototype.ensureSlotDuration = function() {
         break;
       }
     }
-    if (slotDuration && this.duration) {
-      slotCnt = divideDurationByDuration(this.duration, slotDuration);
+    if (slotDuration) {
+      slotCnt = divideRangeByDuration(currentRange.start, currentRange.end, slotDuration);
       if (slotCnt > MAX_AUTO_CELLS) {
         slotDuration = null;
       }
@@ -4012,11 +4102,10 @@ TimelineGrid.prototype.ensureSlotDuration = function() {
 };
 
 TimelineGrid.prototype.computeHeaderFormats = function() {
-  var format0, format1, format2, gridDuration, labelInterval, unit, view, weekNumbersVisible;
+  var format0, format1, format2, labelInterval, unit, view, weekNumbersVisible;
   view = this.view;
-  gridDuration = this.duration;
   labelInterval = this.labelInterval;
-  unit = computeIntervalUnit(labelInterval);
+  unit = computeGreatestUnit(labelInterval);
   weekNumbersVisible = this.opt('weekNumbers');
   format0 = format1 = format2 = null;
   if (unit === 'week' && !weekNumbersVisible) {
@@ -4027,21 +4116,21 @@ TimelineGrid.prototype.computeHeaderFormats = function() {
       format0 = 'YYYY';
       break;
     case 'month':
-      if (gridDuration.asYears() > 1) {
+      if (view.currentRangeAs('years') > 1) {
         format0 = 'YYYY';
       }
       format1 = 'MMM';
       break;
     case 'week':
-      if (gridDuration.asYears() > 1) {
+      if (view.currentRangeAs('years') > 1) {
         format0 = 'YYYY';
       }
       format1 = this.opt('shortWeekFormat');
       break;
     case 'day':
-      if (gridDuration.asYears() > 1) {
+      if (view.currentRangeAs('years') > 1) {
         format0 = this.opt('monthYearFormat');
-      } else if (gridDuration.asMonths() > 1) {
+      } else if (view.currentRangeAs('months') > 1) {
         format0 = 'MMMM';
       }
       if (weekNumbersVisible) {
@@ -4053,7 +4142,7 @@ TimelineGrid.prototype.computeHeaderFormats = function() {
       if (weekNumbersVisible) {
         format0 = this.opt('weekFormat');
       }
-      if (gridDuration.asDays() > 1) {
+      if (view.currentRangeAs('days') > 1) {
         format1 = this.opt('dayOfMonthFormat');
       }
       format2 = this.opt('smallTimeFormat');
@@ -6347,7 +6436,7 @@ ResourceAgendaView = (function(superClass) {
 
 FC.views.agenda.queryResourceClass = function(viewSpec) {
   var ref;
-  if ((ref = viewSpec.options.groupByResource || viewSpec.options.groupByDateAndResource) != null ? ref : viewSpec.duration.as('days') === 1) {
+  if ((ref = viewSpec.options.groupByResource || viewSpec.options.groupByDateAndResource) != null ? ref : viewSpec.duration && viewSpec.duration.as('days') === 1) {
     return ResourceAgendaView;
   }
 };
@@ -6410,7 +6499,7 @@ ResourceMonthView = (function(superClass) {
 
 FC.views.basic.queryResourceClass = function(viewSpec) {
   var ref;
-  if ((ref = viewSpec.options.groupByResource || viewSpec.options.groupByDateAndResource) != null ? ref : viewSpec.duration.as('days') === 1) {
+  if ((ref = viewSpec.options.groupByResource || viewSpec.options.groupByDateAndResource) != null ? ref : viewSpec.duration && viewSpec.duration.as('days') === 1) {
     return ResourceBasicView;
   }
 };
@@ -6421,7 +6510,7 @@ FC.views.month.queryResourceClass = function(viewSpec) {
   }
 };
 
-RELEASE_DATE = '2016-12-05';
+RELEASE_DATE = '2017-04-01';
 
 UPGRADE_WINDOW = {
   years: 1,
